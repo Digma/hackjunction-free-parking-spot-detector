@@ -9,6 +9,13 @@ import sys
 import numpy as np
 import os.path
 
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+
+from opencv.utils import *
+from firebase.parking import updateSpacesEspoo
+
 # %% Initialize the parameters
 confThreshold = 0.4  #Confidence threshold
 nmsThreshold = 0.4   #Non-maximum suppression threshold
@@ -24,6 +31,15 @@ parser.add_argument('--youtube', help='Path to youtube url')
 parser.add_argument('--mask', help='Path to black/white mask')
 parser.add_argument('--skip', help='Skip the first X frames')
 args = parser.parse_args()
+
+# Firebase
+
+cred = credentials.Certificate('token/firebase-admin.json')
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+doc_ref = db.collection(u'parklots-gael').document(u'Espoo')
 
 # Load names of classes
 classesFile = "coco.names"
@@ -49,8 +65,6 @@ def getOutputsNames(net):
 def isCar(classId):
     return classes[classId] in str(["car", "truck", "bus"])
 
-# %% Helper Functions
-
 # Draw the predicted bounding box
 def drawPred(classId, conf, left, top, right, bottom, color=(255, 178, 50)):
 
@@ -70,6 +84,10 @@ def drawPred(classId, conf, left, top, right, bottom, color=(255, 178, 50)):
         top = max(top, labelSize[1])
         cv.rectangle(frame, (left, top - round(1.5*labelSize[1])), (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv.FILLED)
         cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
+
+# %% Helper Functions
+
+# Draw the predicted bounding box
 
 # Remove the bounding boxes with low confidence using non-maxima suppression
 def postprocess(frame, outs, carLocationHistory, time, mask):
@@ -124,7 +142,7 @@ def postprocess(frame, outs, carLocationHistory, time, mask):
             seenInPreviousFrameCounter = 0
             for n in range(1,bbStaticNFrame):
                 lastFrameBBs = [x for x in carLocationHistory if x[0] == time-n]
-                if (containSimilarBoundingBox(lastFrameBBs, left, top, left + width, top + height, width, mask)):
+                if (containSimilarBoundingBox(lastFrameBBs, left, top, left + width, top + height, width, mask, frameSampling=frameSampling)):
                     seenInPreviousFrameCounter += 1
             
             if (seenInPreviousFrameCounter >= 0.7*bbStaticNFrame):
@@ -136,51 +154,9 @@ def postprocess(frame, outs, carLocationHistory, time, mask):
             lastCarLocations.append([time, left, top, left + width, top + height ])
     
     addLabelToFrame(frame, "Parked Car Count: " + str(counterRecurrentCars))
+    updateSpacesEspoo(doc_ref, counterRecurrentCars)
 
     return carLocationHistory + lastCarLocations
-
-
-# Font default text on frame
-font                   = cv.FONT_HERSHEY_SIMPLEX
-fontScale              = 1
-fontColor              = (255,255,0)
-lineType               = 2
-
-def addLabelToFrame(frame, text, bottomLeftCornerOfText=(30, 100)):    
-    cv.putText(frame, text, bottomLeftCornerOfText, font, fontScale, fontColor, lineType)  
-
-def getCenterCoords(left, top, right, bottom):
-    assert(right > left)
-    assert(bottom > top)
-    center_coord_y = int(left + (right - left) / 2.0)
-    center_coord_x = int(top + (bottom - top) / 2.0)
-
-    return (center_coord_x, center_coord_y)
-
-# For now ignoring size of box, only comparing center
-def containSimilarBoundingBox(boundingBoxes, left, top, right, bottom, width, mask, min_radius_thresh_px=25):
-    # Handling empty case
-    if len(boundingBoxes) <= 0:
-        return False
-    
-    x, y = getCenterCoords(left, top, right, bottom)
-
-    # If center of bounding box belong to mask, not a static car
-    (mask_width, mask_height) = mask.shape
-
-    if (x >= mask_width or y >= mask_height):
-        return False
-
-    if (mask[x,y] < 128):
-        return False
-
-    bb_centers = [ getCenterCoords(left, top, right, bottom) for (_, left, top, right, bottom) in boundingBoxes]
-    
-    minDistSquared = min([((x-a)**2 + (y-b)**2) for (a, b) in bb_centers])
-    # Radius is larger for larger bounding boxes
-    radius = max(min_radius_thresh_px, width/8.0 * (24.0 / frameSampling))
-
-    return minDistSquared < radius**2
 
 # Process inputs
 winName = 'Street Parking Detection'
