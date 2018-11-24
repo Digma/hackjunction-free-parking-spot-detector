@@ -18,6 +18,7 @@ nbformat==4.4.0
 numpy==1.15.4
 opencv-contrib-python==3.4.3.18
 opencv-python==3.4.3.18
+pafy==0.5.4
 pandas==0.23.4
 parso==0.3.1
 pexpect==4.6.0
@@ -37,3 +38,4 @@ tornado==5.1.1
 traitlets==4.3.2
 urllib3==1.24.1
 wcwidth==0.1.7
+youtube-dl==2018.11.23
