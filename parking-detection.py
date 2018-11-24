@@ -22,7 +22,7 @@ nmsThreshold = 0.4   #Non-maximum suppression threshold
 inpWidth = 512       #Width of network's input image
 inpHeight = 512      #Height of network's input image
 frameSampling = 48
-bbStaticNFrame=10 # Number of epoch to wait until considering car static
+
 
 parser = argparse.ArgumentParser(description='Object Detection using YOLO in OPENCV')
 parser.add_argument('--image', help='Path to image file.')
@@ -30,9 +30,13 @@ parser.add_argument('--video', help='Path to video file.')
 parser.add_argument('--youtube', help='Path to youtube url')
 parser.add_argument('--mask', help='Path to black/white mask')
 parser.add_argument('--skip', help='Skip the first X frames')
+parser.add_argument('--wait', help='Number of frame where one car is static before classifying as parking', type=int, default=10)
+parser.add_argument('--ratio', help='Ratio of frame that need that contain the bonding box of a given car. To use with --wait', type=float, default=0.6)
 args = parser.parse_args()
 
 # Firebase
+bbStaticNFrame=args.wait # Number of epoch to wait until considering car static
+bbMatchRatio=args.ratio
 
 cred = credentials.Certificate('token/firebase-admin.json')
 firebase_admin.initialize_app(cred)
@@ -145,7 +149,7 @@ def postprocess(frame, outs, carLocationHistory, time, mask):
                 if (containSimilarBoundingBox(lastFrameBBs, left, top, left + width, top + height, width, mask, frameSampling=frameSampling)):
                     seenInPreviousFrameCounter += 1
             
-            if (seenInPreviousFrameCounter >= 0.7*bbStaticNFrame):
+            if (seenInPreviousFrameCounter >= bbMatchRatio*bbStaticNFrame):
                 counterRecurrentCars += 1
                 drawPred(classIds[i], confidences[i], left, top, left + width, top + height, (255,255,0))
             else: 
