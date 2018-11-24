@@ -1,5 +1,6 @@
 token
 darknet
 video
+mask
 coco.names
 **DS_Store

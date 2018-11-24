@@ -23,6 +23,9 @@ inpWidth = 512       #Width of network's input image
 inpHeight = 512      #Height of network's input image
 frameSampling = 48
 
+# Link Youtube video to Firebase document
+documentHashTable = {}
+documentHashTable['Nokkalan Majakka'] = 'Espoo'
 
 parser = argparse.ArgumentParser(description='Object Detection using YOLO in OPENCV')
 parser.add_argument('--image', help='Path to image file.')
@@ -42,8 +45,6 @@ cred = credentials.Certificate('token/firebase-admin.json')
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-
-doc_ref = db.collection(u'parklots-gael').document(u'Espoo')
 
 # Load names of classes
 classesFile = "coco.names"
@@ -158,7 +159,11 @@ def postprocess(frame, outs, carLocationHistory, time, mask):
             lastCarLocations.append([time, left, top, left + width, top + height ])
     
     addLabelToFrame(frame, "Parked Car Count: " + str(counterRecurrentCars))
-    updateSpacesEspoo(doc_ref, counterRecurrentCars)
+    if(args.youtube): 
+        if documentHashTable[video_title]:
+            updateSpacesEspoo(db, documentHashTable[video_title], counterRecurrentCars)
+        else:
+            print("No Firebase document assigned to that video stream")
 
     return carLocationHistory + lastCarLocations
 
@@ -186,6 +191,7 @@ elif (args.youtube):
     # see: https://pypi.org/project/pafy/
     url = args.youtube
     video = pafy.new(url)
+    video_title=video.title
     print("Launching video " + video.title)
     best = video.getbest() #preftype="webm")
     print("Url: " + best.url)
