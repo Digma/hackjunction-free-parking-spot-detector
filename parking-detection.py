@@ -14,7 +14,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 
 from opencv.utils import *
-from firebase.parking import updateSpacesEspoo
+from firebase.parking import updateSpaces
 
 # %% Initialize the parameters
 confThreshold = 0.4  #Confidence threshold
@@ -26,20 +26,24 @@ frameSampling = 48
 # Link Youtube video to Firebase document
 documentHashTable = {}
 documentHashTable['Nokkalan Majakka'] = 'Espoo'
+documentHashTable['http://77.105.106.20/mjpg/video.mjpg?COUNTER#.Wb-SkpuU-NQ.link'] = 'Loviisa'
 
 parser = argparse.ArgumentParser(description='Object Detection using YOLO in OPENCV')
 parser.add_argument('--image', help='Path to image file.')
 parser.add_argument('--video', help='Path to video file.')
-parser.add_argument('--youtube', help='Path to youtube url')
+parser.add_argument('--youtube', help='URL to youtube video')
+parser.add_argument('--link', help='URL to video link')
 parser.add_argument('--mask', help='Path to black/white mask')
 parser.add_argument('--skip', help='Skip the first X frames')
 parser.add_argument('--wait', help='Number of frame where one car is static before classifying as parking', type=int, default=10)
 parser.add_argument('--ratio', help='Ratio of frame that need that contain the bonding box of a given car. To use with --wait', type=float, default=0.6)
+parser.add_argument('--total', help='Total number of car on parking', type=int, default=14)
 args = parser.parse_args()
 
 # Firebase
 bbStaticNFrame=args.wait # Number of epoch to wait until considering car static
 bbMatchRatio=args.ratio
+totalCars=args.total
 
 cred = credentials.Certificate('token/firebase-admin.json')
 firebase_admin.initialize_app(cred)
@@ -88,7 +92,7 @@ def drawPred(classId, conf, left, top, right, bottom, color=(255, 178, 50)):
         labelSize, baseLine = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         top = max(top, labelSize[1])
         cv.rectangle(frame, (left, top - round(1.5*labelSize[1])), (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv.FILLED)
-        cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
+        #cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
 
 # %% Helper Functions
 
@@ -158,17 +162,20 @@ def postprocess(frame, outs, carLocationHistory, time, mask):
             
             lastCarLocations.append([time, left, top, left + width, top + height ])
     
-    addLabelToFrame(frame, "Parked Car Count: " + str(counterRecurrentCars))
+    # Add Text to image
+    addLabelToFrame(frame, "Parked Cars: " + str(counterRecurrentCars), bottomLeftCornerOfText=(50, 60), fontColor=(128, 20, 20))
+    addLabelToFrame(frame, "Free Spaces: " + str(totalCars-counterRecurrentCars), bottomLeftCornerOfText=(50, 120), fontColor=(20, 128, 20))
+
     if(args.youtube): 
         if video_title in documentHashTable:
-            updateSpacesEspoo(db, documentHashTable[video_title], counterRecurrentCars)
+            updateSpaces(db, documentHashTable[video_title], totalCars, counterRecurrentCars)
         else:
             print("No Firebase document assigned to that video stream")
 
     return carLocationHistory + lastCarLocations
 
 # Process inputs
-winName = 'Street Parking Detection'
+winName = 'ParkMate | Parking Status'
 cv.namedWindow(winName, cv.WINDOW_NORMAL)
 
 # Load Input file
@@ -200,6 +207,9 @@ elif (args.youtube):
 
     #start the video
     cap = cv.VideoCapture(best.url)
+elif(args.link):
+    cap = cv.VideoCapture(args.link)
+    video_title=link
 else:
     # Webcam input
     cap = cv.VideoCapture(0)
@@ -287,7 +297,7 @@ while cv.waitKey(1) < 0:
                 cap.release()
                 break
     else:
-        #Youtube
+        #Youtube or Link or Webcam
         for i in range(frameSampling):
             ret = cap.grab()
             
@@ -299,3 +309,6 @@ while cv.waitKey(1) < 0:
     cv.imshow(winName, frame) #cv.bitwise_and(frame,frame,mask = mask))
 
     time += 1
+
+
+#%%

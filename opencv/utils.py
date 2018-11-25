@@ -1,12 +1,11 @@
 import cv2 as cv
 
 # Font default text on frame
-font                   = cv.FONT_HERSHEY_SIMPLEX
-fontScale              = 1
-fontColor              = (255,255,0)
+font                   = cv.FONT_HERSHEY_DUPLEX
+fontScale              = 1.2
 lineType               = 2
 
-def addLabelToFrame(frame, text, bottomLeftCornerOfText=(30, 100)):    
+def addLabelToFrame(frame, text, bottomLeftCornerOfText=(30, 100), fontColor = (255,255,0)):    
     cv.putText(frame, text, bottomLeftCornerOfText, font, fontScale, fontColor, lineType)  
 
 def getCenterCoords(left, top, right, bottom):
