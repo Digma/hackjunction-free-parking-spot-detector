@@ -27,6 +27,7 @@ frameSampling = 48
 documentHashTable = {}
 documentHashTable['Nokkalan Majakka'] = 'Espoo'
 documentHashTable['http://77.105.106.20/mjpg/video.mjpg?COUNTER#.Wb-SkpuU-NQ.link'] = 'Loviisa'
+documentHashTable['https://trafficwatch.myt.mu/plbyn/kfc.stream/playlist.m3u8'] = 'LaChaussee'
 
 parser = argparse.ArgumentParser(description='Object Detection using YOLO in OPENCV')
 parser.add_argument('--image', help='Path to image file.')
