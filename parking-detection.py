@@ -27,7 +27,7 @@ frameSampling = 48
 documentHashTable = {}
 documentHashTable['Nokkalan Majakka'] = 'Espoo'
 documentHashTable['http://77.105.106.20/mjpg/video.mjpg?COUNTER#.Wb-SkpuU-NQ.link'] = 'Loviisa'
-documentHashTable['https://trafficwatch.myt.mu/plbyn/kfc.stream/playlist.m3u8'] = 'LaChaussee'
+documentHashTable['https://trafficwatch.myt.mu/plbyn/kfc.stream/playlist.m3u8'] = 'LaChausse'
 
 parser = argparse.ArgumentParser(description='Object Detection using YOLO in OPENCV')
 parser.add_argument('--image', help='Path to image file.')
@@ -92,7 +92,7 @@ def drawPred(classId, conf, left, top, right, bottom, color=(255, 178, 50)):
         #Display the label at the top of the bounding box
         labelSize, baseLine = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         top = max(top, labelSize[1])
-        cv.rectangle(frame, (left, top - round(1.5*labelSize[1])), (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv.FILLED)
+        #cv.rectangle(frame, (left, top - round(1.5*labelSize[1])), (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv.FILLED)
         #cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
 
 # %% Helper Functions
