@@ -209,7 +209,7 @@ elif (args.youtube):
     cap = cv.VideoCapture(best.url)
 elif(args.link):
     cap = cv.VideoCapture(args.link)
-    video_title=link
+    video_title=args.link
 else:
     # Webcam input
     cap = cv.VideoCapture(0)
