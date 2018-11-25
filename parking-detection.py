@@ -160,7 +160,7 @@ def postprocess(frame, outs, carLocationHistory, time, mask):
     
     addLabelToFrame(frame, "Parked Car Count: " + str(counterRecurrentCars))
     if(args.youtube): 
-        if documentHashTable[video_title]:
+        if video_title in documentHashTable:
             updateSpacesEspoo(db, documentHashTable[video_title], counterRecurrentCars)
         else:
             print("No Firebase document assigned to that video stream")
