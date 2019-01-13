@@ -17,11 +17,10 @@ from opencv.utils import *
 from firebase.parking import updateSpaces
 
 # %% Initialize the parameters
-confThreshold = 0.4  #Confidence threshold
+confThreshold = 0.3  #Confidence threshold
 nmsThreshold = 0.4   #Non-maximum suppression threshold
 inpWidth = 512       #Width of network's input image
 inpHeight = 512      #Height of network's input image
-frameSampling = 48
 
 # Link Youtube video to Firebase document
 documentHashTable = {}
@@ -39,17 +38,24 @@ parser.add_argument('--skip', help='Skip the first X frames')
 parser.add_argument('--wait', help='Number of frame where one car is static before classifying as parking', type=int, default=10)
 parser.add_argument('--ratio', help='Ratio of frame that need that contain the bonding box of a given car. To use with --wait', type=float, default=0.6)
 parser.add_argument('--total', help='Total number of car on parking', type=int, default=14)
+parser.add_argument('--sampling', help='Sampling', type=int, default=24)
 args = parser.parse_args()
+
+frameSampling = args.sampling
 
 # Firebase
 bbStaticNFrame=args.wait # Number of epoch to wait until considering car static
 bbMatchRatio=args.ratio
 totalCars=args.total
 
-cred = credentials.Certificate('token/firebase-admin.json')
-firebase_admin.initialize_app(cred)
+# If firebase config is present (token/firebase-admin.json), then send results back to API. Otherwise skip
+send_results_firebase = os.path.isfile('token/firebase-admin.json')
 
-db = firestore.client()
+if(send_results_firebase):
+	cred = credentials.Certificate('token/firebase-admin.json')
+	firebase_admin.initialize_app(cred)
+
+	db = firestore.client()
 
 # Load names of classes
 classesFile = "coco.names"
@@ -164,10 +170,10 @@ def postprocess(frame, outs, carLocationHistory, time, mask):
             lastCarLocations.append([time, left, top, left + width, top + height ])
     
     # Add Text to image
-    addLabelToFrame(frame, "Parked Cars: " + str(counterRecurrentCars), bottomLeftCornerOfText=(50, 60), fontColor=(128, 20, 20))
-    addLabelToFrame(frame, "Free Spaces: " + str(totalCars-counterRecurrentCars), bottomLeftCornerOfText=(50, 120), fontColor=(20, 128, 20))
+    addLabelToFrame(frame, "Parked Cars: " + str(counterRecurrentCars) + " / " + str(totalCars), bottomLeftCornerOfText=(50, 60), fontColor=(255, 255, 255))
+    #addLabelToFrame(frame, "Free Spaces: " + str(totalCars-counterRecurrentCars), bottomLeftCornerOfText=(50, 120), fontColor=(20, 128, 20))
 
-    if(args.youtube): 
+    if(args.youtube and send_results_firebase): 
         if video_title in documentHashTable:
             updateSpaces(db, documentHashTable[video_title], totalCars, counterRecurrentCars)
         else:
@@ -301,7 +307,8 @@ while cv.waitKey(1) < 0:
         #Youtube or Link or Webcam
         for i in range(frameSampling):
             ret = cap.grab()
-            
+            vid_writer.write(frame.astype(np.uint8)) #cv.bitwise_and(frame,frame,mask = mask)) 
+
         if cv.waitKey(20) & 0xFF == ord('q'):
             break 
 
