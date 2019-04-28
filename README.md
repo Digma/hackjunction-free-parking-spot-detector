@@ -2,9 +2,17 @@
 
 Live detection of free parking space in streets using cheap connected cameras.
 
-## Run
+## Getting Started
+
+Run test stream
 
 ```bash
-./run.sh imgs/
+./run-live.sh 
 ```
+
+## Live Free Parking Spot detection 
+
+![Parking Detection Running Live](https://drive.google.com/uc?export=download&id=1zu4DEbCUbvVJ3FxSaD-64Lt26M_CW-Ri "Parking Detection Running Live")
+
+![Parking Detection Running Live](https://drive.google.com/uc?export=download&id=1lj73UnvYD3v9K8Vl1CMMhxIu3gcYM6Xb "Parking Detection Running Live")
 

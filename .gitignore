@@ -1,3 +1,8 @@
 **.DS_Store
-.idea
-darknet
+
+.idea/
+darknet/
+out/
+opencv/__pycache__/
+yolo/__pycache__/
+
